@@ -19,7 +19,7 @@ const token = {
 const algodClient = new algosdk.Algod(token, baseServer, port);
 
 export default {
-  name: "AlgorandP5",
+  name: "AlgoViz",
   components: {
     VueP5
   },

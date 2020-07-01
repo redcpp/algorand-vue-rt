@@ -1,16 +1,16 @@
 <template>
   <div id="app">
-    <Algorand />
+    <AlgoViz />
   </div>
 </template>
 
 <script>
-import Algorand from './components/Algorand.vue'
+import AlgoViz from './components/AlgoViz.vue'
 
 export default {
   name: 'App',
   components: {
-    Algorand
+    AlgoViz
   }
 }
 </script>
