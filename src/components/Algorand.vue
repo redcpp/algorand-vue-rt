@@ -16,6 +16,7 @@ const port = "";
 const token = {
   "X-API-Key": pureStakeKey
 };
+const algodClient = new algosdk.Algod(token, baseServer, port);
 
 export default {
   name: "AlgorandP5",
@@ -23,7 +24,6 @@ export default {
     VueP5
   },
   data: () => ({
-    status: {},
     w: 600,
     h: 600,
     size: 20,
@@ -33,18 +33,17 @@ export default {
     this.updateStatus();
     setInterval(() => {
       this.updateStatus()
-    }, 1000);
+    }, 500);
   },
   methods: {
     setup(sketch) {
       sketch.createCanvas(this.w, this.h);
       sketch.frameRate(1);
-      sketch.colorMode(sketch.HSB, 100);
       sketch.background(255);
       sketch.noStroke();
     },
     draw(sketch) {
-      sketch.background(0,0,100,50);
+      sketch.background(255,255,255,128);
       this.blocks.forEach(block => {
         block.y += 1;
         sketch.fill(block.color.r, block.color.g, block.color.b);
@@ -60,7 +59,6 @@ export default {
       return Math.floor(Math.random() * Math.floor(max));
     },
     async updateStatus() {
-      const algodClient = new algosdk.Algod(token, baseServer, port);
       let status = await algodClient.status();
       if (
         !this.blocks.length ||
@@ -71,9 +69,9 @@ export default {
           y: 0,
           x: this.getRandomInt(this.w / this.size),
           color: {
-            r: this.getRandomInt(100),
-            g: this.getRandomInt(100),
-            b: this.getRandomInt(100)
+            r: this.getRandomInt(255),
+            g: this.getRandomInt(255),
+            b: this.getRandomInt(255)
           }
         };
         console.log(newBlock);
