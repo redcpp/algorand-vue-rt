@@ -29,11 +29,11 @@
     <hr class="rule" aria-hidden="true" />
 
     <footer class="footnotes">
-      <span class="fn"><sup>¹</sup> AlgoNode public endpoint</span>
+      <span class="fn"><sup>¹</sup> AlgoNode public TestNet — no API key, no signup</span>
       <span class="bar" aria-hidden="true">│</span>
-      <span class="fn"><sup>²</sup> Round cadence ≈ 3.3s</span>
+      <span class="fn"><sup>²</sup> Field perturbed by each block's VRF seed (32 bytes of consensus entropy)</span>
       <span class="bar" aria-hidden="true">│</span>
-      <span class="fn"><sup>³</sup> Palette: vermillion · forest · ochre · indigo · sumi</span>
+      <span class="fn"><sup>³</sup> Palette locked: vermillion · forest · ochre · indigo · sumi</span>
       <span class="bar" aria-hidden="true">│</span>
       <span class="fn monogram">AVR</span>
     </footer>

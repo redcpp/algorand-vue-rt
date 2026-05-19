@@ -1,12 +1,12 @@
 <template>
   <figure class="press-figure">
-    <div class="press-frame" :class="{ 'is-pressing': pressing }">
+    <div class="press-frame" :class="{ 'is-pulsing': pulsing }">
       <Algorand @round-change="handleRoundChange" />
       <VueP5 @setup="setup" @draw="draw"></VueP5>
     </div>
     <figcaption class="press-caption">
-      <span class="caption-line">⟢ Live feed from Algorand TestNet via AlgoNode<sup>¹</sup> · cadence ≈ 3.3s per round<sup>²</sup></span>
-      <span class="press-status" :class="{ 'is-pressing': pressing }">
+      <span class="caption-line">⟢ Perlin flow field perturbed by each block's VRF seed<sup>¹</sup> · particles paint persistent trails<sup>²</sup></span>
+      <span class="press-status" :class="{ 'is-pulsing': pulsing }">
         <span class="status-mark">◆</span>
         <span class="status-label">{{ statusLabel }}</span>
       </span>
@@ -18,6 +18,11 @@
 import VueP5 from "vue-p5";
 import Algorand from "./Algorand.vue";
 
+const INKS = ["#D63B1F", "#1B4D3E", "#C99B3B", "#2B3A67", "#0A0A0A"];
+const W = 720;
+const H = 540;
+const PARTICLE_COUNT = 600;
+
 export default {
   name: "AlgoViz",
   components: {
@@ -25,99 +30,162 @@ export default {
     Algorand
   },
   data: () => ({
-    pendingStamps: [],
-    stampCount: 0,
     lastRound: null,
-    pressing: false,
-    pressTimer: null
+    lastTxCount: null,
+    pulsing: false,
+    pulseTimer: null,
+    particles: [],
+    field: {
+      scale: 0.0045,
+      z: 0,
+      targetZ: 0,
+      rotation: 0,
+      targetRotation: 0
+    }
   }),
   computed: {
     statusLabel() {
-      if (this.pressing && this.lastRound !== null) {
-        return "STOP PRESS · round " + this.lastRound;
+      if (this.lastRound === null) {
+        return "Awaiting first round...";
       }
-      if (this.lastRound !== null) {
-        return "Last stamp · #" + this.lastRound;
+      let label =
+        "Field shift · #" +
+        this.lastRound +
+        (this.lastTxCount != null ? " · " + this.lastTxCount + " txns" : "");
+      if (this.pulsing) {
+        label = "PERTURBED · " + label;
       }
-      return "Awaiting first round...";
+      return label;
     }
   },
   methods: {
     setup(sketch) {
-      sketch.createCanvas(720, 540);
+      sketch.createCanvas(W, H);
       sketch.background("#ECE6D6");
-      sketch.frameRate(30);
-      sketch.textFont("JetBrains Mono");
-      sketch.noStroke();
+      sketch.frameRate(60);
+      sketch.strokeWeight(1);
+      sketch.noFill();
+      sketch.noiseDetail(4, 0.55);
+      // Allocate the particle field. Positions are random; px/py track the
+      // previous step so we can draw a line segment each frame.
+      const particles = new Array(PARTICLE_COUNT);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const x = Math.random() * W;
+        const y = Math.random() * H;
+        particles[i] = { x, y, px: x, py: y, ink: this.pickInk(), age: 0 };
+      }
+      this.particles = particles;
     },
     draw(sketch) {
-      // Drain queued stamps. We never wipe the canvas — the press accumulates.
-      if (this.pendingStamps.length > 0) {
-        for (let i = 0; i < this.pendingStamps.length; i++) {
-          this.drawStamp(sketch, this.pendingStamps[i]);
-          this.stampCount++;
-          // Every 5 stamps, lay down a low-alpha paper-deep wash to fade
-          // older impressions slightly — the press wipes occasionally.
-          if (this.stampCount % 5 === 0) {
-            sketch.noStroke();
-            sketch.fill("rgba(236,230,214,0.18)");
-            sketch.rect(0, 0, 720, 540);
-          }
-        }
-        this.pendingStamps = [];
-      }
-    },
-    drawStamp(sketch, stamp) {
-      sketch.push();
-      sketch.translate(stamp.x + stamp.w / 2, stamp.y + stamp.h / 2);
-      sketch.rotate(stamp.rotation);
+      const field = this.field;
+
+      // 1. Slow fade overlay — paper-deep at ~1.2% alpha. Trails linger for
+      //    several seconds before they wash out, like sumi ink on rice paper.
       sketch.noStroke();
-      // Soft bleed shadow offset slightly down-right.
-      sketch.fill(this.toRGBA(stamp.ink, 0.18));
-      sketch.rect(-stamp.w / 2 + 3, -stamp.h / 2 + 3, stamp.w, stamp.h);
-      // Main ink rectangle.
-      sketch.fill(stamp.ink);
-      sketch.rect(-stamp.w / 2, -stamp.h / 2, stamp.w, stamp.h);
-      // Edge jitter — tiny darker rects to suggest ink bleed at the edges.
-      sketch.fill(this.toRGBA(stamp.ink, 0.4));
-      for (let i = 0; i < 3; i++) {
-        const ex = -stamp.w / 2 + Math.random() * stamp.w;
-        const ey = (Math.random() < 0.5 ? -stamp.h / 2 : stamp.h / 2) - 1;
-        sketch.rect(ex, ey, 6, 2);
+      sketch.fill(236, 230, 214, 3);
+      sketch.rect(0, 0, W, H);
+
+      // 2. Ease the flow field toward its perturbed target.
+      field.z += (field.targetZ - field.z) * 0.04;
+      field.rotation += (field.targetRotation - field.rotation) * 0.04;
+
+      // 5. Periodically re-assert noise detail to keep the field textured.
+      if (sketch.frameCount % 60 === 0) {
+        sketch.noiseDetail(4, 0.55);
       }
-      // Round number stamped on top in paper colour.
-      sketch.fill("rgba(245,241,232,0.88)");
-      sketch.textSize(13);
-      sketch.textAlign(sketch.CENTER, sketch.CENTER);
-      sketch.text("#" + stamp.round, 0, 0);
-      sketch.pop();
+
+      // 3 + 4. Update and draw each particle.
+      const pulsing = this.pulsing;
+      const speed = pulsing ? 1.2 * 1.6 : 1.2;
+      const alpha = pulsing ? 0.32 : 0.18;
+      const particles = this.particles;
+      sketch.strokeWeight(1);
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const angle =
+          sketch.noise(p.x * field.scale, p.y * field.scale, field.z) *
+            sketch.TWO_PI *
+            2 +
+          field.rotation;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
+        p.px = p.x;
+        p.py = p.y;
+        p.x += vx;
+        p.y += vy;
+        p.age += 1;
+
+        sketch.stroke(this.inkRGBA(p.ink, alpha));
+        sketch.line(p.px, p.py, p.x, p.y);
+
+        // Respawn off-canvas or aged-out particles. The respawn pool stays
+        // constant — particles drift in and out, the field never resets.
+        if (p.x < 0 || p.x > W || p.y < 0 || p.y > H || p.age > 800) {
+          p.x = Math.random() * W;
+          p.y = Math.random() * H;
+          p.px = p.x;
+          p.py = p.y;
+          p.age = 0;
+          p.ink = this.pickInk();
+        }
+      }
     },
-    handleRoundChange(payload) {
-      const { round } = payload;
-      this.lastRound = round;
-      this.pendingStamps.push({
-        round,
-        x: 60 + Math.random() * (720 - 60 - 160),
-        y: 60 + Math.random() * (540 - 60 - 72),
-        w: 96 + Math.random() * 64,
-        h: 48 + Math.random() * 24,
-        rotation: (Math.random() - 0.5) * 0.14,
-        ink: this.pickInk()
-      });
+    async handleRoundChange(payload) {
+      this.lastRound = payload.round;
+      this.lastTxCount = payload.txCount != null ? payload.txCount : null;
+
+      // Perturb the flow field deterministically from the block's VRF seed.
+      // Graceful degradation: with no seed, derive a pseudo-seed from round.
+      const seedHex =
+        payload.seed != null
+          ? payload.seed
+          : String(payload.round).padStart(64, "0");
+      const seedNums = this.seedToNumbers(seedHex);
+
+      const field = this.field;
+      // Jump forward in noise z — evolves the field topology.
+      field.targetZ = field.z + 0.4 + seedNums[0] * 0.8;
+      // Small directional bias shift, accumulates across rounds.
+      field.targetRotation += (seedNums[1] - 0.5) * Math.PI * 0.4;
+      // Remap noise density.
+      field.scale = 0.003 + seedNums[2] * 0.004;
+
+      // Re-ink a subset of particles as a visual signal of a chain event.
+      const repaintCount = 80 + Math.floor(seedNums[3] * 80);
+      const particles = this.particles;
+      if (particles.length > 0) {
+        for (let i = 0; i < repaintCount; i++) {
+          const idx = Math.floor(Math.random() * particles.length);
+          particles[idx].ink = this.pickInk();
+        }
+      }
+
+      // Pulse window — boosts velocity and stroke alpha for ~800ms.
+      this.pulsing = true;
+      if (this.pulseTimer) clearTimeout(this.pulseTimer);
+      this.pulseTimer = setTimeout(() => {
+        this.pulsing = false;
+      }, 800);
+
       // Forward the rich event upward to App.vue untouched.
       this.$emit("round-change", payload);
-      // Trigger frame-press nudge + stop-press pulse window.
-      this.pressing = true;
-      if (this.pressTimer) clearTimeout(this.pressTimer);
-      this.pressTimer = setTimeout(() => {
-        this.pressing = false;
-      }, 800);
+    },
+    seedToNumbers(hex) {
+      // Split a 64-char hex string into 8 chunks of 8 hex chars, parse each
+      // as a uint32 and normalize to [0,1]. Deterministic, pure.
+      const clean = String(hex).replace(/[^0-9a-fA-F]/g, "").padEnd(64, "0");
+      const nums = new Array(8);
+      for (let i = 0; i < 8; i++) {
+        const chunk = clean.substring(i * 8, i * 8 + 8);
+        nums[i] = parseInt(chunk, 16) / 0xffffffff;
+      }
+      return nums;
     },
     pickInk() {
-      const inks = ["#D63B1F", "#1B4D3E", "#C99B3B", "#2B3A67", "#0A0A0A"];
-      return inks[Math.floor(Math.random() * inks.length)];
+      return INKS[Math.floor(Math.random() * INKS.length)];
     },
-    toRGBA(hex, a) {
+    inkRGBA(hex, a) {
       const h = hex.replace("#", "");
       const r = parseInt(h.substring(0, 2), 16);
       const g = parseInt(h.substring(2, 4), 16);
@@ -126,7 +194,7 @@ export default {
     }
   },
   beforeDestroy() {
-    if (this.pressTimer) clearTimeout(this.pressTimer);
+    if (this.pulseTimer) clearTimeout(this.pulseTimer);
   }
 };
 </script>
@@ -153,7 +221,7 @@ export default {
   height: 100% !important;
 }
 
-.press-frame.is-pressing {
+.press-frame.is-pulsing {
   animation: frame-press 160ms ease-out;
 }
 
@@ -202,7 +270,7 @@ export default {
   line-height: 1;
 }
 
-.press-status.is-pressing .status-mark {
+.press-status.is-pulsing .status-mark {
   color: var(--vermillion);
   animation: stop-press-pulse 1.2s ease-in-out infinite;
 }
