@@ -26,7 +26,8 @@ It is a small, deliberately minimal piece — a creative-coding lens on a live c
 
 ## Tech stack
 
-- **Vue 2** + Vue CLI 4 — Vue 2 idiomatic, kept on purpose to preserve the original tutorial code shape.
+- **Vue 2.6** — kept on purpose to preserve the original 2020 tutorial code shape.
+- **Vite 5** + `@vitejs/plugin-vue2` — modern dev server with HMR; no more `NODE_OPTIONS=--openssl-legacy-provider` for Node ≥17.
 - **[`algosdk` v2](https://github.com/algorand/js-algorand-sdk)** — migrated from v1.6 in the 2026 refresh.
 - **[`vue-p5`](https://github.com/Kasper24/VueP5)** — p5.js wrapper component for Vue.
 - **[AlgoNode](https://algonode.io) public TestNet** (`https://testnet-api.algonode.cloud`) — no API key, no signup.
@@ -68,14 +69,14 @@ No backend, no smart contract, no wallet. Read-only chain access.
 git clone https://github.com/redcpp/algorand-vue-rt.git
 cd algorand-vue-rt
 npm install
-npm run serve
-# open http://localhost:8080
+npm run dev        # http://localhost:8080 with HMR
 ```
 
-Production build:
+Build & preview:
 
 ```bash
-npm run build      # emits to dist/
+npm run build      # outputs dist/
+npm run preview    # serves dist/ on http://localhost:4173 for verification
 ```
 
 The AlgoNode TestNet endpoint is hard-wired in `src/components/Algorand.vue`. To point at MainNet or a private `algod`, edit the `algodClient` constructor there.
@@ -91,10 +92,11 @@ The original code shipped in 2020. The refresh in this branch brings it back to 
 - **Removed Vue CLI scaffold cruft.** The unused `HelloWorld.vue` and starter boilerplate that shipped with the 2020 `vue-cli` template were trimmed.
 - **UI polish for portfolio presentation.** Cleaner layout around the canvas; the page no longer looks like a Vue CLI default.
 - **Deployed.** A live demo went up on [`algo-vue-rt.surge.sh`](https://algo-vue-rt.surge.sh) so the README has something to point at.
+- **Vue CLI 4 + webpack 4 → Vite 5** (with `@vitejs/plugin-vue2`). Dev server with HMR, sub-second cold start, and the `NODE_OPTIONS=--openssl-legacy-provider` workaround for modern Node is gone.
 
 This refresh is part of a broader 2026 portfolio pass. The sister project [`redcpp/algorand-ipfs-js`](https://github.com/redcpp/algorand-ipfs-js) got the same treatment — same PureStake → AlgoNode migration, same `algosdk` v1 → v2 bump, plus a CLI rewrite — and is the flagship companion to this visualizer.
 
-What was deliberately *not* changed: the Vue 2 major version. A Vue 3 / Vite rewrite would be reasonable, but the goal here was "boot cleanly on modern Node and run against a live chain", not "rewrite".
+What was deliberately *not* changed: the Vue 2 major version. A Vue 3 rewrite would be reasonable, but the goal here was "boot cleanly on modern Node and run against a live chain", not "rewrite".
 
 ---
 

@@ -16,7 +16,7 @@
 
 <script>
 import VueP5 from "vue-p5";
-import Algorand from "./Algorand";
+import Algorand from "./Algorand.vue";
 
 export default {
   name: "AlgoViz",
