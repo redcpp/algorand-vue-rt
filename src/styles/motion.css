@@ -1,0 +1,52 @@
+/* =============================================================
+   STOCHASTIC LEDGER — motion keyframes & utilities
+   Restrained motion. Three moments: load, new round, grain.
+   ============================================================= */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes grain-shift {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(-3px, 2px); }
+  100% { transform: translate(2px, -2px); }
+}
+
+@keyframes stop-press-pulse {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(1.18); }
+}
+
+@keyframes ledger-press {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(1px); }
+  100% { transform: translateY(0); }
+}
+
+/* Utility motion classes — opt-in via class names */
+.motion-fade-up    { animation: fade-up 300ms ease-out both; }
+.motion-fade-in    { animation: fade-in 200ms ease-out both; }
+.motion-scale-in   { animation: scale-in 500ms ease-out both; }
+.motion-press      { animation: ledger-press 160ms ease-in-out; }
+.motion-stop-press { animation: stop-press-pulse 1.2s ease-in-out infinite; }
+.motion-grain      { animation: grain-shift 6s ease-in-out infinite; }
+
+/* Accessibility: respect reduced motion preference. Hard requirement. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

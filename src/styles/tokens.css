@@ -1,0 +1,64 @@
+/* =============================================================
+   STOCHASTIC LEDGER — locked design tokens
+   Do not introduce new colors. The composition lives on these.
+   ============================================================= */
+
+:root {
+  /* paper & ink */
+  --paper:         #F5F1E8;   /* warm off-white, aged broadside */
+  --paper-deep:    #ECE6D6;   /* secondary panel ground */
+  --ink:           #0A0A0A;   /* sumi black, primary text */
+  --ink-soft:      #2A2520;   /* secondary text */
+  --rule:          #C9C2B0;   /* hairline rules */
+  --taupe:         #A8A29C;   /* tertiary text / footnote */
+
+  /* the five inks (block palette + accents) */
+  --vermillion:    #D63B1F;
+  --forest:        #1B4D3E;
+  --ochre:         #C99B3B;
+  --indigo:        #2B3A67;
+  --sumi:          #0A0A0A;
+
+  /* atmospherics */
+  --paper-shadow:  rgba(10, 10, 10, 0.08);
+  --grain-opacity: 0.06;
+
+  /* type stacks */
+  --font-display:  'Fraunces', 'Times New Roman', Georgia, serif;
+  --font-mono:     'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  /* spacing scale (4px base) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 72px;
+  --s-9: 120px;
+
+  /* layout */
+  --page-max-width: 1280px;
+  --rail-width:     200px;
+
+  /* optical tuning */
+  --leading-tight:  0.85;
+  --tracking-tight: -0.03em;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-display);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}

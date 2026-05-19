@@ -1,42 +1,22 @@
 {
   "name": "algo-vue",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "serve": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service serve",
-    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service build",
-    "lint": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service lint",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
     "deploy": "npm run build && npx --yes surge ./dist algo-vue-rt.surge.sh"
   },
   "dependencies": {
     "algosdk": "^2.7.0",
-    "core-js": "^3.6.5",
     "vue": "^2.6.11",
     "vue-p5": "^0.8.3"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "~4.4.0",
-    "@vue/cli-plugin-eslint": "~4.4.0",
-    "@vue/cli-service": "~4.4.0",
-    "babel-eslint": "^10.1.0",
-    "cross-env": "^7.0.3",
-    "eslint": "^6.7.2",
-    "eslint-plugin-vue": "^6.2.2",
-    "vue-template-compiler": "^2.6.11"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "babel-eslint"
-    },
-    "rules": {}
+    "@vitejs/plugin-vue2": "^2.3.3",
+    "vite": "^5.4.10"
   },
   "browserslist": [
     "> 1%",
