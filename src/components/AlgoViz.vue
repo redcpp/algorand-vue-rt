@@ -18,10 +18,16 @@
 import VueP5 from "vue-p5";
 import Algorand from "./Algorand.vue";
 
-const INKS = ["#D63B1F", "#1B4D3E", "#C99B3B", "#2B3A67", "#0A0A0A"];
+// Four chroma inks for the visible "rivers"; sumi black sits out — at low
+// alpha it only ever muddied the field.
+const INKS_CHROMA = ["#D63B1F", "#1B4D3E", "#C99B3B", "#2B3A67"];
+// A faint warm-dark for the structural ghost layer.
+const GHOST_INK = "#2A2520";
 const W = 720;
 const H = 540;
-const PARTICLE_COUNT = 600;
+const PARTICLE_COUNT = 460;
+// ~37% of particles are bold colored "ink" rivers; the rest are faint ghosts.
+const INK_COUNT = 170;
 
 export default {
   name: "AlgoViz",
@@ -35,6 +41,7 @@ export default {
     pulsing: false,
     pulseTimer: null,
     particles: [],
+    signatureInk: null,
     field: {
       scale: 0.0045,
       z: 0,
@@ -63,26 +70,37 @@ export default {
       sketch.createCanvas(W, H);
       sketch.background("#ECE6D6");
       sketch.frameRate(60);
-      sketch.strokeWeight(1);
       sketch.noFill();
       sketch.noiseDetail(4, 0.55);
-      // Allocate the particle field. Positions are random; px/py track the
-      // previous step so we can draw a line segment each frame.
+      // Allocate the particle field. The first INK_COUNT particles are bold
+      // colored "rivers"; the rest are faint structural ghosts. px/py track
+      // the previous step so we can draw a line segment each frame.
       const particles = new Array(PARTICLE_COUNT);
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const x = Math.random() * W;
         const y = Math.random() * H;
-        particles[i] = { x, y, px: x, py: y, ink: this.pickInk(), age: 0 };
+        const isInk = i < INK_COUNT;
+        particles[i] = {
+          x,
+          y,
+          px: x,
+          py: y,
+          kind: isInk ? "ink" : "ghost",
+          ink: isInk ? this.pickChroma() : GHOST_INK,
+          age: 0,
+          life: isInk ? 480 : 340
+        };
       }
       this.particles = particles;
     },
     draw(sketch) {
       const field = this.field;
 
-      // 1. Slow fade overlay — paper-deep at ~1.2% alpha. Trails linger for
-      //    several seconds before they wash out, like sumi ink on rice paper.
+      // 1. Fade overlay — paper-deep at ~1.6% alpha. Trails wash out in ~2.4s:
+      //    long enough to read as continuous rivers, fast enough that the
+      //    field keeps negative space and never silts to mud.
       sketch.noStroke();
-      sketch.fill(236, 230, 214, 3);
+      sketch.fill(236, 230, 214, 4);
       sketch.rect(0, 0, W, H);
 
       // 2. Ease the flow field toward its perturbed target.
@@ -94,19 +112,20 @@ export default {
         sketch.noiseDetail(4, 0.55);
       }
 
-      // 3 + 4. Update and draw each particle.
+      // 3 + 4. Update and draw each particle. Ghosts lay down faint structure;
+      //         ink rivers ride on top, bold and saturated.
       const pulsing = this.pulsing;
-      const speed = pulsing ? 1.2 * 1.6 : 1.2;
-      const alpha = pulsing ? 0.32 : 0.18;
       const particles = this.particles;
-      sketch.strokeWeight(1);
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
+        const isInk = p.kind === "ink";
         const angle =
           sketch.noise(p.x * field.scale, p.y * field.scale, field.z) *
             sketch.TWO_PI *
-            2 +
+            1.6 +
           field.rotation;
+        let speed = isInk ? 1.25 : 1.05;
+        if (pulsing) speed *= 1.5;
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
 
@@ -116,18 +135,30 @@ export default {
         p.y += vy;
         p.age += 1;
 
+        let weight, alpha;
+        if (isInk) {
+          weight = pulsing ? 2.5 : 1.8;
+          alpha = pulsing ? 0.52 : 0.34;
+        } else {
+          weight = 0.9;
+          alpha = 0.07;
+        }
+        sketch.strokeWeight(weight);
         sketch.stroke(this.inkRGBA(p.ink, alpha));
         sketch.line(p.px, p.py, p.x, p.y);
 
-        // Respawn off-canvas or aged-out particles. The respawn pool stays
-        // constant — particles drift in and out, the field never resets.
-        if (p.x < 0 || p.x > W || p.y < 0 || p.y > H || p.age > 800) {
+        // Respawn off-canvas or aged-out particles. The pool stays constant —
+        // particles drift in and out, the field never resets. Respawned ink
+        // rivers carry the latest block's signature color.
+        if (p.x < 0 || p.x > W || p.y < 0 || p.y > H || p.age > p.life) {
           p.x = Math.random() * W;
           p.y = Math.random() * H;
           p.px = p.x;
           p.py = p.y;
           p.age = 0;
-          p.ink = this.pickInk();
+          if (isInk) {
+            p.ink = this.signatureInk || this.pickChroma();
+          }
         }
       }
     },
@@ -151,13 +182,18 @@ export default {
       // Remap noise density.
       field.scale = 0.003 + seedNums[2] * 0.004;
 
-      // Re-ink a subset of particles as a visual signal of a chain event.
-      const repaintCount = 80 + Math.floor(seedNums[3] * 80);
+      // Each block has a signature color drawn deterministically from its
+      // seed. Flood ~65% of the ink rivers with it — the previous block's
+      // color is still washing out, so two or three chain "generations" of
+      // color coexist on the canvas at once.
+      const sigIdx =
+        Math.floor(seedNums[4] * INKS_CHROMA.length) % INKS_CHROMA.length;
+      this.signatureInk = INKS_CHROMA[sigIdx];
       const particles = this.particles;
-      if (particles.length > 0) {
-        for (let i = 0; i < repaintCount; i++) {
-          const idx = Math.floor(Math.random() * particles.length);
-          particles[idx].ink = this.pickInk();
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (p.kind === "ink" && Math.random() < 0.65) {
+          p.ink = this.signatureInk;
         }
       }
 
@@ -182,8 +218,8 @@ export default {
       }
       return nums;
     },
-    pickInk() {
-      return INKS[Math.floor(Math.random() * INKS.length)];
+    pickChroma() {
+      return INKS_CHROMA[Math.floor(Math.random() * INKS_CHROMA.length)];
     },
     inkRGBA(hex, a) {
       const h = hex.replace("#", "");

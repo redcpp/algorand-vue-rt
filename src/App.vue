@@ -213,7 +213,7 @@ html, body {
   font-family: Fraunces, 'Times New Roman', Georgia, serif;
   font-weight: 700;
   font-variation-settings: 'opsz' 144, 'SOFT' 30;
-  font-size: 112px;
+  font-size: 80px;
   line-height: 0.85;
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -325,8 +325,8 @@ html, body {
 @media (max-width: 1023px) {
   .page { padding: 32px 32px 40px; }
   .ledger { gap: 32px; }
-  .round-rail { flex-basis: 140px; width: 140px; }
-  .digit { font-size: 88px; }
+  .round-rail { flex-basis: 116px; width: 116px; }
+  .digit { font-size: 64px; }
 }
 
 @media (max-width: 767px) {
