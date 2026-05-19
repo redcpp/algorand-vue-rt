@@ -1,5 +1,5 @@
 <template>
-  <div></div>
+  <div style="display:none"></div>
 </template>
 
 <script>
@@ -20,10 +20,33 @@ export default {
     async waitForNewBlock() {
       const status = await algodClient.status().do();
       // algosdk v2 returns camelCase keys: `lastRound` (was `last-round` in v1).
-      let lastRound = status.lastRound !== undefined ? status.lastRound : status["last-round"];
+      let lastRound =
+        status.lastRound !== undefined ? status.lastRound : status["last-round"];
+      let previous = null;
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        this.$emit("lastRound", lastRound);
+        if (previous !== lastRound) {
+          const digits = String(lastRound).split("");
+          let changedIndices = [];
+          if (previous !== null) {
+            const prevDigits = String(previous)
+              .padStart(digits.length, " ")
+              .split("");
+            changedIndices = digits
+              .map((d, i) => (d !== prevDigits[i] ? i : -1))
+              .filter((i) => i >= 0);
+          } else {
+            // First-ever round: treat every digit as "changed" so the
+            // giant-number animation runs on initial paint.
+            changedIndices = digits.map((_, i) => i);
+          }
+          this.$emit("round-change", {
+            round: lastRound,
+            digits,
+            changedIndices
+          });
+          previous = lastRound;
+        }
         lastRound++;
         try {
           await algodClient.statusAfterBlock(lastRound).do();

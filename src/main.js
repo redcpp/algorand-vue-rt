@@ -1,3 +1,6 @@
+import './styles/tokens.css'
+import './styles/motion.css'
+
 import Vue from 'vue'
 import App from './App.vue'
 
