@@ -3,31 +3,38 @@
 </template>
 
 <script>
-const pureStakeKey = "A4cepxeclB6jMPj2L6CXt2aZapaJqgyQ7wgMp9xA";
-const algosdk = require("algosdk");
-// const main = require('algosdk/src/main');
-const baseServer = "https://testnet-algorand.api.purestake.io/ps2";
+import algosdk from "algosdk";
+
+// AlgoNode public TestNet algod endpoint (no API key required).
+// Replaces the deprecated PureStake API that was shut down in 2023.
+const baseServer = "https://testnet-api.algonode.cloud";
 const port = "";
-const token = {
-  "X-API-Key": pureStakeKey
-};
+const token = "";
 const algodClient = new algosdk.Algodv2(token, baseServer, port);
 
 export default {
-  created () {
+  created() {
     this.waitForNewBlock();
   },
   methods: {
     async waitForNewBlock() {
-      let status = (await algodClient.status().do());
-      let lastRound = status["last-round"];
+      const status = await algodClient.status().do();
+      // algosdk v2 returns camelCase keys: `lastRound` (was `last-round` in v1).
+      let lastRound = status.lastRound !== undefined ? status.lastRound : status["last-round"];
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        this.$emit('lastRound', lastRound)
+        this.$emit("lastRound", lastRound);
         lastRound++;
-        await algodClient.statusAfterBlock(lastRound).do();
+        try {
+          await algodClient.statusAfterBlock(lastRound).do();
+        } catch (err) {
+          // Brief backoff on transient network errors so the loop survives.
+          // eslint-disable-next-line no-console
+          console.warn("statusAfterBlock failed, retrying:", err && err.message);
+          await new Promise((r) => setTimeout(r, 2000));
+        }
       }
     }
   }
-}
+};
 </script>

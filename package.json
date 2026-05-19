@@ -1,14 +1,15 @@
 {
   "name": "algo-vue",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "serve": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service serve",
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service build",
+    "lint": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service lint",
+    "deploy": "npm run build && npx --yes surge ./dist algo-vue-rt.surge.sh"
   },
   "dependencies": {
-    "algosdk": "^1.6.2",
+    "algosdk": "^2.7.0",
     "core-js": "^3.6.5",
     "vue": "^2.6.11",
     "vue-p5": "^0.8.3"
@@ -18,6 +19,7 @@
     "@vue/cli-plugin-eslint": "~4.4.0",
     "@vue/cli-service": "~4.4.0",
     "babel-eslint": "^10.1.0",
+    "cross-env": "^7.0.3",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^6.2.2",
     "vue-template-compiler": "^2.6.11"
